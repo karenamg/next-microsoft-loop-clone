@@ -20,7 +20,7 @@ function DocumentEditorSection({ params }: DocumentEditorSectionProps) {
       <DocumentInfo params={params} />
 
       {/* Rich text editor */}
-      <RichDocumentEditor />
+      <RichDocumentEditor params={params} />
     </div>
   );
 }

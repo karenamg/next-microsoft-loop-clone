@@ -9,18 +9,67 @@ import SimpleImage from "simple-image-editorjs";
 import Table from "@editorjs/table";
 import CodeTool from "@editorjs/code";
 import Paragraph from "@editorjs/paragraph";
+import { doc, updateDoc, onSnapshot } from "firebase/firestore";
+import { useUser } from "@clerk/nextjs";
+import { db } from "@/config/firebaseConfig";
+import { useState } from "react";
 
-function RichDocumentEditor() {
+interface RichDocumentEditorProps {
+  params: {
+    workspaceid: string;
+    documentid: string;
+  };
+}
+
+function RichDocumentEditor({ params }: RichDocumentEditorProps) {
   const ref = useRef<EditorJS | undefined>(undefined);
   let editor: EditorJS | undefined;
+  const initEditorCalled = useRef(false);
+  const { user } = useUser();
+  let isFetched = false;
+
+  const saveDocument = () => {
+    ref.current.save().then(async (outputData) => {
+      const docRef = doc(db, "DocumentOutput", params?.documentid);
+
+      console.log(outputData);
+      await updateDoc(docRef, {
+        output: JSON.stringify(outputData),
+        editedBy: user?.primaryEmailAddress?.emailAddress,
+      });
+    });
+  };
+
+  const getDocumentOutput = () => {
+    const unsubscribe = onSnapshot(
+      doc(db, "DocumentOutput", params?.documentid),
+      (doc) => {
+        if (
+          doc.data()?.editedBy != user?.primaryEmailAddress?.emailAddress ||
+          isFetched == false
+        )
+          doc.data()?.editedBy &&
+            editor?.render(JSON.parse(doc.data()?.output));
+        isFetched = true;
+      }
+    );
+  };
 
   useEffect(() => {
-    initEditor();
-  }, []);
+    params && getDocumentOutput();
+  }, [params, getDocumentOutput]);
 
   const initEditor = () => {
-    if (!editor) {
+    if (!initEditorCalled.current) {
+      initEditorCalled.current = true;
       editor = new EditorJS({
+        onChange: (api, event) => {
+          console.log("UPDATED");
+          saveDocument();
+        },
+        onReady: () => {
+          getDocumentOutput();
+        },
         holder: "editorjs",
         tools: {
           header: Header,
@@ -47,7 +96,7 @@ function RichDocumentEditor() {
           },
           table: Table,
           list: {
-            class: List,
+            class: List as any,
             inlineToolbar: true,
             shortcut: "CMD+SHIFT+L",
             config: {
@@ -69,8 +118,13 @@ function RichDocumentEditor() {
       ref.current = editor;
     }
   };
+
+  useEffect(() => {
+    user && initEditor();
+  }, [user, initEditor]);
+
   return (
-    <div className="-ml-40">
+    <div className="mx-40">
       <div id="editorjs"></div>
     </div>
   );

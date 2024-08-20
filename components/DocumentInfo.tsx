@@ -21,21 +21,20 @@ function DocumentInfo({ params }: DocumentInfoProps) {
   const [emoji, setEmoji] = useState("");
   const [documentInfo, setDocumentInfo] = useState<DocumentData | null>(null);
 
-  useEffect(() => {
-    params && getDocumentInfo();
-  }, [params]);
-
   const getDocumentInfo = async () => {
     const docRef = doc(db, "WorkspaceDocuments", params?.documentid);
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
-      console.log(docSnap.data());
       setDocumentInfo(docSnap.data() as DocumentData);
       setEmoji(docSnap.data()?.emoji || "");
       setCoverImage(docSnap.data()?.coverImage || "/cover.png");
     }
   };
+
+  useEffect(() => {
+    params && getDocumentInfo();
+  }, [params, getDocumentInfo]);
 
   const updateDocumentInfo = async (key: string, value: string) => {
     const docRef = doc(db, "WorkspaceDocuments", params?.documentid);

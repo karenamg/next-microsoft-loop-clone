@@ -43,10 +43,6 @@ function SideNav({ params }: SideNavProps) {
   const { user } = useUser();
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    params && getDocumentList();
-  }, [params]);
-
   const getDocumentList = () => {
     const q = query(
       collection(db, "WorkspaceDocuments"),
@@ -63,6 +59,10 @@ function SideNav({ params }: SideNavProps) {
       });
     });
   };
+
+  useEffect(() => {
+    params && getDocumentList();
+  }, [params, getDocumentList]);
 
   const createNewDocument = async () => {
     if (documentList?.length >= MAX_FILE) {
